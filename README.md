@@ -1,4 +1,9 @@
-# byteorder-pack
+# byteorder-pack [![Latest Version]][crates.io] [![Docs Status]][docs.rs]
+
+[Latest Version]: https://img.shields.io/crates/v/byteorder-pack.svg
+[crates.io]: https://crates.io/crates/byteorder-pack
+[Docs Status]: https://docs.rs/byteorder-pack/badge.svg
+[docs.rs]: https://docs.rs/byteorder-pack
 
 A binary data reader and writer that is similar to Python's struct module,
 but makes use of Rust's typing system.
