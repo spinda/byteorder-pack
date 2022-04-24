@@ -2,6 +2,12 @@
 name = "byteorder-pack"
 version = "0.1.0"
 edition = "2021"
+authors = ["Harry Cheng <i@reimu.moe>"]
+description = "A binary data reader and writer that is similar to Python's struct module"
+repository = "https://github.com/chengyuhui/byteorder-pack"
+license = "MIT"
+categories = ["encoding", "parsing"]
+keywords = ["binary", "struct", "unpack", "pack"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
