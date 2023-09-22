@@ -77,6 +77,13 @@ impl<T: UnpackFrom + Default + Copy, const N: usize> UnpackFrom for [T; N] {
     }
 }
 
+impl UnpackFrom for () {
+    #[inline]
+    fn unpack_from<E: ByteOrder, R: Read + ?Sized>(_src: &mut R) -> IoResult<Self> {
+        Ok(())
+    }
+}
+
 macro_rules! impl_tuple {
     ($($n:ident),+) => {
         impl<$($n: UnpackFrom),+> UnpackFrom for ($($n,)+)

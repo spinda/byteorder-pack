@@ -62,6 +62,13 @@ pub trait PackTo: Sized + Copy {
     }
 }
 
+impl PackTo for () {
+    #[inline]
+    fn pack_to<E: ByteOrder, W: Write + ?Sized>(self, _dst: &mut W) -> IoResult<()> {
+        Ok(())
+    }
+}
+
 macro_rules! impl_tuple {
     ($($n:tt => $t:ident),+) => {
         impl<$($t: PackTo),+> PackTo for ($($t,)+)
