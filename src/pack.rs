@@ -3,7 +3,7 @@ use std::io::{Result as IoResult, Write};
 use byteorder::{BigEndian, ByteOrder, LittleEndian, WriteBytesExt};
 
 /// Write a value into a [`Write`].
-pub trait PackTo: Sized + Copy {
+pub trait PackTo: Sized {
     /// Pack binary data into `dst`.
     /// # Example
     /// ```rust
@@ -17,7 +17,7 @@ pub trait PackTo: Sized + Copy {
     ///
     /// assert_eq!(cursor.into_inner(), vec![0x01, 0x02, 0x00, 0x03, 0x00, 0x04]);
     /// ```
-    fn pack_to<E: ByteOrder, W: Write + ?Sized>(self, dst: &mut W) -> IoResult<()>;
+    fn pack_to<E: ByteOrder, W: Write + ?Sized>(&self, dst: &mut W) -> IoResult<()>;
 
     /// Pack binary data into `dst` from a tuple, in [`BigEndian`] order.
     /// # Example
@@ -31,7 +31,7 @@ pub trait PackTo: Sized + Copy {
     ///
     /// assert_eq!(cursor.into_inner(), vec![0x01, 0x02, 0x00, 0x03, 0x00, 0x04]);
     /// ```
-    fn pack_to_be<W: Write + ?Sized>(self, dst: &mut W) -> IoResult<()> {
+    fn pack_to_be<W: Write + ?Sized>(&self, dst: &mut W) -> IoResult<()> {
         self.pack_to::<BigEndian, _>(dst)
     }
     /// Pack binary data into `dst` from a tuple, in [`LittleEndian`] order.
@@ -46,7 +46,7 @@ pub trait PackTo: Sized + Copy {
     ///
     /// assert_eq!(cursor.into_inner(), vec![0x01, 0x02, 0x03, 0x00, 0x04, 0x00]);
     /// ```
-    fn pack_to_le<W: Write + ?Sized>(self, dst: &mut W) -> IoResult<()> {
+    fn pack_to_le<W: Write + ?Sized>(&self, dst: &mut W) -> IoResult<()> {
         self.pack_to::<LittleEndian, _>(dst)
     }
 
@@ -62,9 +62,16 @@ pub trait PackTo: Sized + Copy {
     }
 }
 
+impl<T: PackTo> PackTo for &'_ T {
+    #[inline]
+    fn pack_to<E: ByteOrder, W: Write + ?Sized>(&self, dst: &mut W) -> IoResult<()> {
+        (*self).pack_to::<E, _>(dst)
+    }
+}
+
 impl PackTo for () {
     #[inline]
-    fn pack_to<E: ByteOrder, W: Write + ?Sized>(self, _dst: &mut W) -> IoResult<()> {
+    fn pack_to<E: ByteOrder, W: Write + ?Sized>(&self, _dst: &mut W) -> IoResult<()> {
         Ok(())
     }
 }
@@ -74,7 +81,7 @@ macro_rules! impl_tuple {
         impl<$($t: PackTo),+> PackTo for ($($t,)+)
         {
             #[inline]
-            fn pack_to<E: ByteOrder, W: Write + ?Sized>(self, dst: &mut W) -> IoResult<()> {
+            fn pack_to<E: ByteOrder, W: Write + ?Sized>(&self, dst: &mut W) -> IoResult<()> {
                 $(self.$n.pack_to::<E, _>(dst)?;)+
                 Ok(())
             }
@@ -110,8 +117,8 @@ macro_rules! impl_primitive {
     ($($name:ident => $ty:ty),+) => {
         $(
             impl PackTo for $ty {
-                fn pack_to<E: ByteOrder, W: Write + ?Sized>(self, src: &mut W) -> IoResult<()> {
-                    src.$name::<E>(self)
+                fn pack_to<E: ByteOrder, W: Write + ?Sized>(&self, src: &mut W) -> IoResult<()> {
+                    src.$name::<E>(*self)
                 }
             }
         )+
@@ -125,8 +132,8 @@ impl_primitive!(
 );
 
 impl PackTo for u8 {
-    fn pack_to<E: ByteOrder, W: Write + ?Sized>(self, dst: &mut W) -> IoResult<()> {
-        dst.write_u8(self)
+    fn pack_to<E: ByteOrder, W: Write + ?Sized>(&self, dst: &mut W) -> IoResult<()> {
+        dst.write_u8(*self)
     }
 
     fn pack_multiple_to<E: ByteOrder, W: Write + ?Sized>(
@@ -139,20 +146,20 @@ impl PackTo for u8 {
 }
 
 impl PackTo for i8 {
-    fn pack_to<E: ByteOrder, W: Write + ?Sized>(self, dst: &mut W) -> IoResult<()> {
-        dst.write_i8(self)
+    fn pack_to<E: ByteOrder, W: Write + ?Sized>(&self, dst: &mut W) -> IoResult<()> {
+        dst.write_i8(*self)
     }
 }
 
 impl<T: PackTo + Copy, const N: usize> PackTo for [T; N] {
-    fn pack_to<E: ByteOrder, W: Write + ?Sized>(self, dst: &mut W) -> IoResult<()> {
+    fn pack_to<E: ByteOrder, W: Write + ?Sized>(&self, dst: &mut W) -> IoResult<()> {
         T::pack_multiple_to::<E, _>(&self[..], dst)?;
         Ok(())
     }
 }
 
 impl<T: PackTo + Copy> PackTo for &[T] {
-    fn pack_to<E: ByteOrder, W: Write + ?Sized>(self, dst: &mut W) -> IoResult<()> {
+    fn pack_to<E: ByteOrder, W: Write + ?Sized>(&self, dst: &mut W) -> IoResult<()> {
         T::pack_multiple_to::<E, _>(self, dst)?;
         Ok(())
     }
